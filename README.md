@@ -11,7 +11,6 @@ Each cycle brings unpredictable events — solar flares, alien signals, system f
 3. Scientist – deciphers alien anomalies.
 4. Medic – protects life.
 5. Security Officer – holds the line.
-6. Commander (You) – makes the final call.
 
 ## ⚙️ Gameplay Overview
 
@@ -19,7 +18,8 @@ Every turn, new events strike from the galaxy’s randomness.
 You must:
 - Read the event,
 - Choose a crew member to handle it,
-- Manage ship parameters — power ⚡, morale 💫, hull integrity 🛠️, oxygen 🌬️.
+- Manage ship parameters — Health ❤️, morale 💫, Supply 🛠️.
+- Becarefull of crews - Health ❤️, Stamina 💪.
 
 > **Your goal**: survive 10 turns. Every decision matters.
 
