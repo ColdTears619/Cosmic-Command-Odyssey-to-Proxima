@@ -19,7 +19,7 @@ You must:
 - Read the event,
 - Choose a crew member to handle it,
 - Manage ship parameters — Health ❤️, morale 💫, Supply 🛠️.
-- Becarefull of crews - Health ❤️, Stamina 💪.
+- Look at your crews - Health ❤️, Stamina 💪.
 
 > **Your goal**: survive 10 turns. Every decision matters.
 
