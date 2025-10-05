@@ -4,32 +4,24 @@ Survive. Lead. Defy the unknown.
 In a distant galaxy, your ship drifts between fading stars — its crew, six specialists from different worlds, bound by one mission: survive the next 10 turns.
 Each cycle brings unpredictable events — solar flares, alien signals, system failures, or moral decisions that test your judgment. The survival of the ship depends on your ability to assign the right role to the right crisis… before time runs out.
 
-🛰️ Roles on Board
+## 🛰️ Roles on Board
 
-Engineer – repairs the unrepairable.
+1. Engineer – repairs the unrepairable.
+2. Pilot – charts paths through chaos.
+3. Scientist – deciphers alien anomalies.
+4. Medic – protects life.
+5. Security Officer – holds the line.
+6. Commander (You) – makes the final call.
 
-Pilot – charts paths through chaos.
-
-Scientist – deciphers alien anomalies.
-
-Medic – protects life.
-
-Security Officer – holds the line.
-
-Commander (You) – makes the final call.
-
-⚙️ Gameplay Overview
+## ⚙️ Gameplay Overview
 
 Every turn, new events strike from the galaxy’s randomness.
 You must:
+- Read the event,
+- Choose a crew member to handle it,
+- Manage ship parameters — power ⚡, morale 💫, hull integrity 🛠️, oxygen 🌬️.
 
-Read the event,
-
-Choose a crew member to handle it,
-
-Manage ship parameters — power ⚡, morale 💫, hull integrity 🛠️, oxygen 🌬️.
-
-Your goal: survive 10 turns. Every decision matters.
+> **Your goal**: survive 10 turns. Every decision matters.
 
 -------------------------------
 ## 💻 Technical Overview
