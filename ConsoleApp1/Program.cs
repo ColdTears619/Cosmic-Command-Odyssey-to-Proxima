@@ -1,9 +1,14 @@
 ﻿// Variables of game
+using System.ComponentModel;
+using System.Linq.Expressions;
+
 int chanceOfSuccessScavenge = 50;
 int gameDifficulty = 1;
-int gameTurn = 10;
+int totalTurn = 10;
 int minProbabilityEventToWin = 55;
 int maxHealth = 100, maxStamina = 100, maxSupply = 200, maxMorale = 100;
+int minMoral = 25, turnToLeaveCrew = 3;
+string userChoice;
 
 decimal rateOfIncreaseCrewHealth = 15;
 decimal rateOfIncreaseShipHealth = 15;
@@ -53,7 +58,7 @@ string[,] cosmicEvents =
     }
 };
 
-string[,] playerStatus = { { "Space Ship Health", "100" }, { "Crew Morale", "50" }, { "Supply", "150" } };
+string[,] shipStatus = { { "Space Ship Health", "100" }, { "Crew Morale", "100" }, { "Supply", "200" } };
 
 //* first Column: Event index, Second Column: Crew, Third Column: Chance To Success
 int[,] relatedMatrix =
@@ -74,12 +79,28 @@ string[] chooseRole =
     "5. Security Officer"
 };
 
-// TODO: Replace increase health, morale param with variable
 string[] actionsMenu =
 {
     $"1. Performing emergency repairs (+{rateOfIncreaseShipHealth} ship health, -10 Supply)",
-    $"2. Medical Handling & Rest (+{rateOfIncreaseCrewMorale} Morale, +{rateOfIncreaseCrewMorale} Crew Health, +{rateOfIncreaseCrewStamina} Crew Stamina, -15 Supplies)",
+    $"2. Medical Handling & Rest (+{rateOfIncreaseCrewMorale} Morale, +{rateOfIncreaseCrewHealth} Crew Health, +{rateOfIncreaseCrewStamina} Crew Stamina, -15 Supplies)",
     $"3. Search for resources ({chanceOfSuccessScavenge} chance of success)"
+};
+
+string[] firstMessages =
+{
+    "Initializing systems...",
+    "Scanning star maps...",
+    "Crew members awakening from cryosleep...",
+    "Welcome aboard the starship *Eclipse*.",
+    @"
+      Mission Briefing:
+      You are the commander of an exploration crew searching for habitable worlds.
+      Manage your crew, survive cosmic events, and uncover ancient secrets.
+
+      Tip: Each decision affects your fate.
+    ",
+    "The stars stretch endlessly before you.",
+    "A new journey begins..."
 };
 
 string[] gameDifficultyMenu = { "1. Easy", "2. Normal", "3. Hard" };
@@ -89,5 +110,173 @@ string[] mainMenuOptions = {
     "3. Exit"
 };
 
-//-----------------------------------------
+//---------------Main Loop---------------------
 
+do
+{
+    Console.Clear();
+    foreach (string option in mainMenuOptions)
+    {
+        Console.WriteLine(option);
+    }
+    Console.Write("Please Select (number): ");
+    userChoice = Console.ReadLine();
+
+    switch (userChoice)
+    {
+        case "1":
+            StartGame();
+            break;
+        case "2":
+            ChooseDifficulty();
+            break;
+        default:
+            break;
+
+    }
+
+} while (userChoice != "3" && userChoice != null);
+
+//---------------Start Game---------------------
+void StartGame()
+{
+    GameInitialize();
+    // DisplayFirstMessages();
+
+    for (int turn = 1; turn <= totalTurn; turn++)
+    {
+        Console.Clear();
+        Console.WriteLine($"==================================================\nYear {turn} out of {totalTurn} | Destination: Proxima Considers\n==================================================\n");
+
+        DisplayShipStatus();
+        DisplayCrewStatus();
+
+        int eventNumber = DisplayAndChooseEvent();
+        DisplayAndChooseCrewForEvent();
+        // ResultOfDecisionForEvent(eventNumber, crewNumber);
+
+        // CheckShipParameters();
+        // CheckCrewParameters();
+
+        // DisplayActionMenu();
+        // ChooseAction();
+        // DisplayResultOfAction();
+
+        Console.WriteLine("> Press Any Key For Next Turn (Escape Key For Exit)");
+        if (Console.ReadKey(true).Key == ConsoleKey.Escape)
+        {
+            Console.Clear();
+            Console.WriteLine("You Loose :(");
+            Console.WriteLine("> Press Any Key To Back To The Main Menu");
+            Console.ReadLine();
+            break;
+        }
+    }
+}
+
+//---------------Choice Difficulty---------------------
+void ChooseDifficulty()
+{
+    int userInput;
+    bool validInput;
+    do
+    {
+        Console.Clear();
+        foreach (string difficulty in gameDifficultyMenu)
+            Console.WriteLine(difficulty);
+
+        Console.Write("Please choice difficulty (number): ");
+        validInput = int.TryParse(Console.ReadLine(), out userInput);
+
+        if (!validInput)
+            continue;
+
+
+        if (userInput > 0 && userInput < 4)
+            gameDifficulty = userInput;
+
+    } while (userInput <= 0 || userInput >= 4);
+
+}
+
+//---------------Initializing Game---------------------
+void GameInitialize()
+{
+    if (gameDifficulty == 2)
+    {
+        shipStatus[1, 1] = "50";
+        shipStatus[2, 1] = "100";
+    }
+    else if (gameDifficulty == 3)
+    {
+        shipStatus[0, 1] = "50";
+        shipStatus[1, 1] = "30";
+        shipStatus[2, 1] = "50";
+        for (int crew = 0; crew < crewsInformation.GetLength(0); crew++)
+        {
+            crewsInformation[crew, 1] = "50";
+            crewsInformation[crew, 2] = "50";
+        }
+    }
+}
+
+//---------------Display First Messages---------------------
+void DisplayFirstMessages()
+{
+    foreach (string message in firstMessages)
+    {
+        foreach (char ch in message)
+        {
+            Console.Write(ch);
+            Thread.Sleep(50);
+        }
+        Console.WriteLine();
+    }
+    Console.WriteLine("> Press Any Key to begin your mission.");
+    Console.ReadLine();
+}
+
+//---------------Display Ship Status---------------------
+void DisplayShipStatus()
+{
+    Console.WriteLine("Ship Status: ");
+    for (int status = 0; status < shipStatus.GetLength(0); status++)
+    {
+        Console.WriteLine($"- {shipStatus[status, 0]}: {shipStatus[status, 1]}");
+    }
+    Console.WriteLine();
+}
+
+//---------------Display Crew Status--------------------
+void DisplayCrewStatus()
+{
+    Console.WriteLine("Crew Status: ");
+    for (int status = 0; status < crewsInformation.GetLength(0); status++)
+    {
+        Console.WriteLine($"- {crewsInformation[status, 0]}:\n\tHealth: {crewsInformation[status, 1]}\n\tStamin: {crewsInformation[status, 2]}\n");
+    }
+}
+
+//---------------Display And Choose Event--------------------
+int DisplayAndChooseEvent()
+{
+    int cosmicEventNumber = rand.Next(0, cosmicEvents.GetLength(0) - 1);
+    Console.WriteLine("--------------------------------------------------");
+    Console.WriteLine($"Cosmic Event:\n\t- {cosmicEvents[cosmicEventNumber, 0]}\n");
+    return cosmicEventNumber;
+}
+
+//---------------Display Event--------------------
+void DisplayAndChooseCrewForEvent()
+{
+    Console.WriteLine("Who Should Lead This Mission?");
+    for (int role = 0; role < crewsInformation.GetLength(0); role++)
+    {
+        Console.WriteLine($"\t{role + 1}) {crewsInformation[role, 0]}");
+    }
+
+    Console.WriteLine("Please Choose: ");
+
+    //TODO: Choose Exist Crew To Lead Mission
+    //TODO: Check Health And Stamina
+}

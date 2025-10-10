@@ -6,7 +6,7 @@ This is roadmap to complete mini-game
 
 1. define array of crews
 2. define turn game
-3. define array of actions _?_
+3. define array of actions
 4. define 3D array of cosmic events
 5. define 3D array of player status
    1. status of every role
