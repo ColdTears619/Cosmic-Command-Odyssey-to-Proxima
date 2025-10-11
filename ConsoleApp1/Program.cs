@@ -21,7 +21,7 @@ Random rand = new Random();
 
 // Arrays of mini game
 //* First Column: Crew Role, Second Column: Health, Third Column: Stamina
-string[,] crewsInformation = { { "Pilot", "100", "100" }, { "Scientist", "100", "100" }, { "Engineer", "100", "100" }, { "Medic", "100", "100" }, { "Security Officer", "100", "100" } };
+string[,] crewsInformation = { { "Pilot", "0", "100" }, { "Scientist", "0", "100" }, { "Engineer", "0", "0" }, { "Medic", "0", "100" }, { "Security Officer", "0", "100" } };
 
 //* First Column: Event name, Second Column: Success Message, Third Column: Fail Message
 string[,] cosmicEvents =
@@ -63,12 +63,12 @@ string[,] shipStatus = { { "Space Ship Health", "100" }, { "Crew Morale", "100" 
 //* first Column: Event index, Second Column: Crew, Third Column: Chance To Success
 int[,] relatedMatrix =
 {
-    {0, 2, 50},
-    {1, 0, 50},
-    {2, 0, 50},
-    {3, 1, 50},
-    {4, 3, 50},
-    {5, 4, 50},
+    {0, 2, 35},
+    {1, 0, 35},
+    {2, 0, 35},
+    {3, 1, 35},
+    {4, 3, 35},
+    {5, 4, 35},
 };
 string[] chooseRole =
 {
@@ -145,15 +145,23 @@ void StartGame()
 
     for (int turn = 1; turn <= totalTurn; turn++)
     {
+        gameOver = CheckGameStatus();
+        if (gameOver)
+            break;
+
         Console.Clear();
         Console.WriteLine($"==================================================\nYear {turn} out of {totalTurn} | Destination: Proxima Considers\n==================================================\n");
 
         DisplayShipStatus();
         DisplayCrewStatus();
 
-        int eventNumber = DisplayAndChooseEvent();
-        DisplayAndChooseCrewForEvent();
-        // ResultOfDecisionForEvent(eventNumber, crewNumber);
+        int chosenEvent = DisplayAndChooseEvent();
+        int chosenCrew = DisplayAndChooseCrewForEvent();
+
+        Console.WriteLine($"chosen event is: {chosenEvent}\nchosen crew is: {chosenCrew}");
+        int[] resultOfEvent = ResultOfDecisionForEvent(chosenEvent, chosenCrew);
+
+        // UpdateEntityStatus(resultOfEvent)
 
         // CheckShipParameters();
         // CheckCrewParameters();
@@ -171,6 +179,17 @@ void StartGame()
             Console.ReadLine();
             break;
         }
+    }
+
+    if (gameOver)
+    {
+        Console.WriteLine("\n\t\tGame Over — The cosmos claims another soul, yet the universe awaits your next attempt\n\nPlease Press Any Key To Back To Main Menu");
+        Console.ReadLine();
+    }
+    else
+    {
+        Console.WriteLine("\n\t\tVictory — The cosmos bends to your will, and the stars honor your triumph. Now rest, Commander… new challenges await beyond the horizon.\n\nPlease Press Any Key To Back To Main Menu");
+        Console.ReadLine();
     }
 }
 
@@ -266,17 +285,91 @@ int DisplayAndChooseEvent()
     return cosmicEventNumber;
 }
 
-//---------------Display Event--------------------
-void DisplayAndChooseCrewForEvent()
+//---------------Display Crews And Choose Crew For Event--------------------
+int DisplayAndChooseCrewForEvent()
 {
     Console.WriteLine("Who Should Lead This Mission?");
     for (int role = 0; role < crewsInformation.GetLength(0); role++)
     {
-        Console.WriteLine($"\t{role + 1}) {crewsInformation[role, 0]}");
+        if (Convert.ToInt32(crewsInformation[role, 1]) > 0)
+        {
+            Console.WriteLine($"\t{role + 1}) {crewsInformation[role, 0]}");
+        }
     }
 
-    Console.WriteLine("Please Choose: ");
+    int userInput;
+    //* Health And Stamina Of Crew
+    bool[] crewCondition = [false, false];
+    do
+    {
+        Console.Write("Please Choose Role (number): ");
+        bool validInput = int.TryParse(Console.ReadLine(), out userInput);
 
-    //TODO: Choose Exist Crew To Lead Mission
-    //TODO: Check Health And Stamina
+        if (!validInput)
+            continue;
+
+        //TODO: Check Health And Stamina
+        if (userInput > 0 && userInput < 6)
+        {
+            CheckCrewParameters(userInput - 1, ref crewCondition);
+            if (crewCondition[0] == false) Console.WriteLine("Your chosen crew member has fallen. Their light fades among the stars...");
+            if (crewCondition[1] == false) Console.WriteLine("Your crew is exhausted. Their movements slow, their focus drifts — they need rest.");
+        }
+    } while ((userInput <= 0 || userInput >= 5) && (crewCondition[0] == false || crewCondition[1] == false));
+
+    return userInput - 1;
+}
+
+//---------------Check Crew Parameters--------------------
+void CheckCrewParameters(int userInput, ref bool[] crewCondition)
+{
+    //* Check Health and Stamina
+    if (Convert.ToInt32(crewsInformation[userInput, 1]) >= 10) crewCondition[0] = true;
+    if (Convert.ToInt32(crewsInformation[userInput, 2]) >= 10) crewCondition[1] = true;
+}
+
+//---------------Calculate Success Of Event--------------------
+int[] ResultOfDecisionForEvent(int chosenEvent, int chosenCrew)
+{
+    int chance = rand.Next(1, 60);
+    Console.WriteLine($"Dice Role: {chance}. Chance to success: {minProbabilityEventToWin}.");
+
+    int correctChosenRole = 10;
+    if (relatedMatrix[chosenEvent, 1] == chosenCrew)
+        correctChosenRole = relatedMatrix[chosenEvent, 2];
+
+    if (correctChosenRole > 10)
+        Console.WriteLine("You choose correct role for lead this event!\n");
+
+
+    //? Think about reward and penalty methods
+    if ((chance + correctChosenRole) >= minProbabilityEventToWin)
+    {
+        Console.WriteLine(cosmicEvents[chosenEvent, 1]);
+        //* Ship Health, Chosen Crew, Reduce Stamina
+        return new int[] { rand.Next(1, 5), chosenCrew, 10 };
+    }
+    else
+    {
+        Console.WriteLine(cosmicEvents[chosenEvent, 2]);
+        //* Ship Health, Chosen Crew, Reduce Stamina, Reduce Health Of Crew, Reduce Health Of All Crew
+        return new int[] { rand.Next(7, 20), chosenCrew, rand.Next(10, 20), rand.Next(10, 20), rand.Next(5, 15) };
+    }
+}
+
+//---------------Check Win OR Loose--------------------
+bool CheckGameStatus()
+{
+    if (shipStatus[0, 1] == "0" || shipStatus[1, 1] == "0" || shipStatus[2, 1] == "0")
+        return true;
+    else
+    {
+        int deadCrew = 0;
+        for (int crew = 0; crew < crewsInformation.GetLength(0); crew++)
+        {
+            if (crewsInformation[crew, 1] == "0")
+                deadCrew++;
+        }
+        return deadCrew == crewsInformation.GetLength(0) ? true : false;
+    }
 }
