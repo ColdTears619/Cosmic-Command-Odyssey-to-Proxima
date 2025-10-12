@@ -1,4 +1,4 @@
-﻿// Variables of game
+﻿//--------------------------------Variables of game--------------------------------
 using System.ComponentModel;
 using System.Linq.Expressions;
 
@@ -10,16 +10,19 @@ int maxHealth = 100, maxStamina = 100, maxSupply = 200, maxMorale = 100;
 int minMoral = 25, turnToLeaveCrew = 3;
 string userChoice;
 
-decimal rateOfIncreaseCrewHealth = 15;
-decimal rateOfIncreaseShipHealth = 15;
-decimal rateOfIncreaseCrewStamina = 20;
-decimal rateOfIncreaseCrewMorale = 5;
+int rateOfIncreaseCrewHealth = 10;
+int rateOfIncreaseShipHealth = 10;
+int rateOfIncreaseCrewStamina = 15;
+int rateOfIncreaseCrewMorale = 5;
+int rateOfIncreaseSupply = 25;
+
+int rateOfDecreaseSupply = 20;
 
 bool gameOver = false;
 
 Random rand = new Random();
 
-// Arrays of mini game
+//--------------------------------Arrays of mini game---------------------------------
 //* First Column: Crew Role, Second Column: Health, Third Column: Stamina
 string[,] crewsInformation = { { "Pilot", "0", "100" }, { "Scientist", "0", "100" }, { "Engineer", "0", "0" }, { "Medic", "0", "100" }, { "Security Officer", "0", "100" } };
 
@@ -81,8 +84,8 @@ string[] chooseRole =
 
 string[] actionsMenu =
 {
-    $"1. Performing emergency repairs (+{rateOfIncreaseShipHealth} ship health, -10 Supply)",
-    $"2. Medical Handling & Rest (+{rateOfIncreaseCrewMorale} Morale, +{rateOfIncreaseCrewHealth} Crew Health, +{rateOfIncreaseCrewStamina} Crew Stamina, -15 Supplies)",
+    $"1. Performing emergency repairs (+{rateOfIncreaseShipHealth} ship health, -{rateOfDecreaseSupply + 5} Supply)",
+    $"2. Medical Handling & Rest (+{rateOfIncreaseCrewMorale} Morale, +{rateOfIncreaseCrewHealth} Crew Health, +{rateOfIncreaseCrewStamina} Crew Stamina, -{rateOfDecreaseSupply} Supplies)",
     $"3. Search for resources ({chanceOfSuccessScavenge} chance of success)"
 };
 
@@ -110,7 +113,7 @@ string[] mainMenuOptions = {
     "3. Exit"
 };
 
-//---------------Main Loop---------------------
+//---------------------Main Loop------------------------
 
 do
 {
@@ -160,11 +163,6 @@ void StartGame()
 
         Console.WriteLine($"chosen event is: {chosenEvent}\nchosen crew is: {chosenCrew}");
         int[] resultOfEvent = ResultOfDecisionForEvent(chosenEvent, chosenCrew);
-
-        // UpdateEntityStatus(resultOfEvent)
-
-        // CheckShipParameters();
-        // CheckCrewParameters();
 
         // DisplayActionMenu();
         // ChooseAction();
@@ -308,10 +306,9 @@ int DisplayAndChooseCrewForEvent()
         if (!validInput)
             continue;
 
-        //TODO: Check Health And Stamina
         if (userInput > 0 && userInput < 6)
         {
-            CheckCrewParameters(userInput - 1, ref crewCondition);
+            CheckCrewStatus(userInput - 1, ref crewCondition);
             if (crewCondition[0] == false) Console.WriteLine("Your chosen crew member has fallen. Their light fades among the stars...");
             if (crewCondition[1] == false) Console.WriteLine("Your crew is exhausted. Their movements slow, their focus drifts — they need rest.");
         }
@@ -321,7 +318,7 @@ int DisplayAndChooseCrewForEvent()
 }
 
 //---------------Check Crew Parameters--------------------
-void CheckCrewParameters(int userInput, ref bool[] crewCondition)
+void CheckCrewStatus(int userInput, ref bool[] crewCondition)
 {
     //* Check Health and Stamina
     if (Convert.ToInt32(crewsInformation[userInput, 1]) >= 10) crewCondition[0] = true;
@@ -346,14 +343,16 @@ int[] ResultOfDecisionForEvent(int chosenEvent, int chosenCrew)
     if ((chance + correctChosenRole) >= minProbabilityEventToWin)
     {
         Console.WriteLine(cosmicEvents[chosenEvent, 1]);
-        //* Ship Health, Chosen Crew, Reduce Stamina
-        return new int[] { rand.Next(1, 5), chosenCrew, 10 };
+        Console.WriteLine("\nEvent Passed: Crew morale and supplies have increased. Keep up the momentum, Commander.");
+        reward();
     }
     else
     {
         Console.WriteLine(cosmicEvents[chosenEvent, 2]);
-        //* Ship Health, Chosen Crew, Reduce Stamina, Reduce Health Of Crew, Reduce Health Of All Crew
-        return new int[] { rand.Next(7, 20), chosenCrew, rand.Next(10, 20), rand.Next(10, 20), rand.Next(5, 15) };
+        Console.WriteLine("\nEvent Failed: Crew health and stamina reduced, morale drops, ship sustains damage, and supplies are lost. Recover quickly, Commander.");
+
+        //TODO: Complete penalty method
+        Penalty();
     }
 }
 
@@ -372,4 +371,134 @@ bool CheckGameStatus()
         }
         return deadCrew == crewsInformation.GetLength(0) ? true : false;
     }
+}
+
+//---------------Give Reward--------------------
+//* ship health, supply, morale, health, stamina, crew number
+void reward(int actionChoose = 2)
+{
+    ChangeRateParamsByRoles();
+    switch (actionChoose)
+    {
+        case 1:
+            //* Increase health and stamina and decrease supply
+
+            if (Convert.ToInt32(shipStatus[2, 1]) < 19)
+            {
+                Console.WriteLine("\nSupplies Critical: Crew health and stamina cannot recover — provisions exhausted. Scavenge for supplies, Commander.");
+                break;
+            }
+            for (int crew = 0; crew < crewsInformation.GetLength(0); crew++)
+            {
+                if (crewsInformation[crew, 1] == "0")
+                    continue;
+
+                IncreaseCrewParams(crew);
+            }
+
+            ReduceSupply(rateOfDecreaseSupply);
+            IncreaseMorale();
+            break;
+        case 2:
+            //* Increase supply and morale
+            IncreaseMorale();
+            IncreaseSupplyShip();
+            //TODO: Add method to reduce stamina and health of specific crew
+            break;
+        case 3:
+            //* Increase supply
+            IncreaseSupplyShip();
+            break;
+        case 4:
+            //* Increase ship health and reduce supply
+            if (Convert.ToInt32(shipStatus[2, 1]) < 24)
+            {
+                Console.WriteLine("\nSupplies Critical: Ship repairs impossible — resources too low. Recommend scavenging for supplies next turn, Commander.");
+                break;
+            }
+
+            ReduceSupply(rateOfDecreaseSupply - 5);
+            IncreaseShipHealth();
+            break;
+        default:
+            break;
+    }
+}
+
+//---------------Increase Crew Params Method--------------------
+void IncreaseCrewParams(int crewNumber)
+{
+    decimal crewHealth = Convert.ToInt32(crewsInformation[crewNumber, 1]) + rateOfIncreaseCrewHealth;
+    decimal crewStamina = Convert.ToInt32(crewsInformation[crewNumber, 2]) + rateOfIncreaseCrewStamina;
+    crewsInformation[crewNumber, 1] = crewHealth > maxHealth ? "100" : Convert.ToString(crewHealth);
+    crewsInformation[crewNumber, 2] = crewStamina > maxStamina ? "100" : Convert.ToString(crewStamina);
+}
+
+//---------------Increase Crew Params Method--------------------
+//* Effect roles on rate parameters
+void ChangeRateParamsByRoles()
+{
+    if (crewsInformation[3, 1] != "0")
+    {
+        Console.WriteLine("\nMedic Assigned: Crew health and stamina recovery are increased by 50%. Stay steady, Commander.");
+        rateOfIncreaseCrewStamina += 5;
+        rateOfIncreaseCrewHealth += 5;
+    }
+    else
+    {
+        Console.WriteLine("\nNo Medic Assigned: Crew health and stamina recovery are slower than normal. Stay vigilant, Commander.");
+        rateOfIncreaseCrewStamina = 15;
+        rateOfIncreaseCrewHealth = 10;
+    }
+    if (crewsInformation[4, 1] != "0")
+    {
+        Console.WriteLine("\nSecurity Officer Assigned: Crew morale increased by 50%. Discipline and focus hold steady, Commander.");
+        rateOfIncreaseCrewMorale += 5;
+    }
+    else
+    {
+        Console.WriteLine("\nNo Medic Assigned: Crew health and stamina recovery are slower than normal. Stay vigilant, Commander.");
+        rateOfIncreaseCrewMorale = 5;
+    }
+    if (crewsInformation[2, 1] != "0")
+    {
+        Console.WriteLine("\nEngineer Assigned: Ship health recovery and system repairs are increased by 50%. Keep the engines running, Commander.");
+        rateOfIncreaseShipHealth += 5;
+    }
+    else
+    {
+        Console.WriteLine("\nNo Engineer Assigned: Ship repairs are slower, and system recovery is reduced. Monitor the hull carefully, Commander.");
+        rateOfIncreaseShipHealth = 10;
+    }
+}
+//---------------Increase Ship Params Method--------------------
+void IncreaseSupplyShip()
+{
+    decimal supply = Convert.ToInt32(shipStatus[2, 1]) + rateOfIncreaseSupply;
+    shipStatus[2, 1] = supply > maxSupply ? "200" : Convert.ToString(supply);
+}
+
+void IncreaseMorale()
+{
+    decimal morale = Convert.ToInt32(shipStatus[1, 1]) + rateOfIncreaseCrewMorale;
+    shipStatus[1, 1] = morale > maxMorale ? "100" : Convert.ToString(morale);
+}
+
+void IncreaseShipHealth()
+{
+    decimal shipHealth = Convert.ToInt32(shipStatus[0, 1]) + rateOfIncreaseShipHealth;
+    shipStatus[0, 1] = shipHealth > maxHealth ? "100" : Convert.ToString(shipHealth);
+}
+
+//---------------Give Penalty--------------------
+void Penalty(int actionChoose = 1)
+{
+    //TODO: Add switch case for reduce all parameters
+}
+
+//---------------Decrease Ship Params Method--------------------
+void ReduceSupply(int rateOfDecreaseSupply)
+{
+    decimal supply = Convert.ToInt32(shipStatus[2, 1]) - rateOfDecreaseSupply;
+    shipStatus[2, 1] = Convert.ToString(supply);
 }
