@@ -17,6 +17,9 @@ int rateOfIncreaseCrewMorale = 5;
 int rateOfIncreaseSupply = 25;
 
 int rateOfDecreaseSupply = 20;
+int rateOfDecreaseHealth = 5;
+int rateOfDecreaseStamina = 20;
+
 
 bool gameOver = false;
 
@@ -24,7 +27,7 @@ Random rand = new Random();
 
 //--------------------------------Arrays of mini game---------------------------------
 //* First Column: Crew Role, Second Column: Health, Third Column: Stamina
-string[,] crewsInformation = { { "Pilot", "0", "100" }, { "Scientist", "0", "100" }, { "Engineer", "0", "0" }, { "Medic", "0", "100" }, { "Security Officer", "0", "100" } };
+string[,] crewsInformation = { { "Pilot", "100", "100" }, { "Scientist", "100", "100" }, { "Engineer", "100", "50" }, { "Medic", "100", "100" }, { "Security Officer", "100", "100" } };
 
 //* First Column: Event name, Second Column: Success Message, Third Column: Fail Message
 string[,] cosmicEvents =
@@ -162,8 +165,9 @@ void StartGame()
         int chosenCrew = DisplayAndChooseCrewForEvent();
 
         Console.WriteLine($"chosen event is: {chosenEvent}\nchosen crew is: {chosenCrew}");
-        int[] resultOfEvent = ResultOfDecisionForEvent(chosenEvent, chosenCrew);
+        ResultOfDecisionForEvent(chosenEvent, chosenCrew);
 
+        // TODO: Display action menu and choose for action
         // DisplayActionMenu();
         // ChooseAction();
         // DisplayResultOfAction();
@@ -186,6 +190,7 @@ void StartGame()
     }
     else
     {
+        Console.Clear();
         Console.WriteLine("\n\t\tVictory — The cosmos bends to your will, and the stars honor your triumph. Now rest, Commander… new challenges await beyond the horizon.\n\nPlease Press Any Key To Back To Main Menu");
         Console.ReadLine();
     }
@@ -326,7 +331,7 @@ void CheckCrewStatus(int userInput, ref bool[] crewCondition)
 }
 
 //---------------Calculate Success Of Event--------------------
-int[] ResultOfDecisionForEvent(int chosenEvent, int chosenCrew)
+void ResultOfDecisionForEvent(int chosenEvent, int chosenCrew)
 {
     int chance = rand.Next(1, 60);
     Console.WriteLine($"Dice Role: {chance}. Chance to success: {minProbabilityEventToWin}.");
@@ -344,6 +349,7 @@ int[] ResultOfDecisionForEvent(int chosenEvent, int chosenCrew)
     {
         Console.WriteLine(cosmicEvents[chosenEvent, 1]);
         Console.WriteLine("\nEvent Passed: Crew morale and supplies have increased. Keep up the momentum, Commander.");
+        Penalty(2, chosenCrew);
         reward();
     }
     else
@@ -351,7 +357,6 @@ int[] ResultOfDecisionForEvent(int chosenEvent, int chosenCrew)
         Console.WriteLine(cosmicEvents[chosenEvent, 2]);
         Console.WriteLine("\nEvent Failed: Crew health and stamina reduced, morale drops, ship sustains damage, and supplies are lost. Recover quickly, Commander.");
 
-        //TODO: Complete penalty method
         Penalty();
     }
 }
@@ -374,7 +379,10 @@ bool CheckGameStatus()
 }
 
 //---------------Give Reward--------------------
-//* ship health, supply, morale, health, stamina, crew number
+//* 1: Increase crew health, stamina and morale but decrease supply
+//* 2: Increase morale and supply after event successfully passed
+//* 3: Increase supply after scavenge
+//* 4: Increase ship health and reduce supply
 void reward(int actionChoose = 2)
 {
     ChangeRateParamsByRoles();
@@ -403,7 +411,6 @@ void reward(int actionChoose = 2)
             //* Increase supply and morale
             IncreaseMorale();
             IncreaseSupplyShip();
-            //TODO: Add method to reduce stamina and health of specific crew
             break;
         case 3:
             //* Increase supply
@@ -436,6 +443,7 @@ void IncreaseCrewParams(int crewNumber)
 
 //---------------Increase Crew Params Method--------------------
 //* Effect roles on rate parameters
+//TODO: Remove messages and transfer to new methods which that check health and display messages for recovery
 void ChangeRateParamsByRoles()
 {
     if (crewsInformation[3, 1] != "0")
@@ -491,14 +499,67 @@ void IncreaseShipHealth()
 }
 
 //---------------Give Penalty--------------------
-void Penalty(int actionChoose = 1)
+//* 1: Penalty after event failed
+//* 2: Reduce Specific crew
+void Penalty(int reduceMode = 1, int crewNumber = -1)
 {
     //TODO: Add switch case for reduce all parameters
+    switch (reduceMode)
+    {
+        case 1:
+            ReduceShipHealth(10);
+            ReduceSupply(rand.Next(10, 30));
+            ReduceCrewMorale(rand.Next(10, 15));
+            ReduceCrewParams(crewNumber);
+            break;
+        case 2:
+            ReduceSupply(crewNumber);
+            break;
+        default:
+            break;
+    }
 }
 
-//---------------Decrease Ship Params Method--------------------
-void ReduceSupply(int rateOfDecreaseSupply)
+//---------------Decrease Ship Supply Method--------------------
+void ReduceSupply(int decreaseSupplyParam = 0)
 {
-    decimal supply = Convert.ToInt32(shipStatus[2, 1]) - rateOfDecreaseSupply;
+    int decreaseSupply = decreaseSupplyParam != 0 ? decreaseSupplyParam : rateOfDecreaseSupply;
+    decimal supply = Convert.ToInt32(shipStatus[2, 1]) - decreaseSupply;
     shipStatus[2, 1] = Convert.ToString(supply);
+}
+
+//---------------Decrease Ship Health Method--------------------
+void ReduceShipHealth(int decreaseHealthParam = 0)
+{
+    decimal health = Convert.ToInt32(shipStatus[0, 1]) - decreaseHealthParam;
+    shipStatus[0, 1] = Convert.ToString(health);
+}
+
+//---------------Decrease Morale Method--------------------
+void ReduceCrewMorale(int decreaseMoraleParam = 0)
+{
+    decimal morale = Convert.ToInt32(shipStatus[1, 1]) - decreaseMoraleParam;
+    shipStatus[1, 1] = Convert.ToString(morale);
+}
+
+//---------------Decrease Crew Params Method--------------------
+void ReduceCrewParams(int crewNumber)
+{
+    if (crewNumber != -1)
+    {
+        decimal crewHealth = Convert.ToInt32(crewsInformation[crewNumber, 1]) - rateOfDecreaseHealth;
+        decimal crewStamina = Convert.ToInt32(crewsInformation[crewNumber, 2]) - rateOfDecreaseStamina;
+        crewsInformation[crewNumber, 1] = crewHealth <= 0 ? "0" : Convert.ToString(crewHealth);
+        crewsInformation[crewNumber, 2] = crewStamina <= 0 ? "0" : Convert.ToString(crewStamina);
+    }
+    else
+    {
+        for (int crew = 0; crew < crewsInformation.GetLength(0); crew++)
+        {
+            decimal crewHealth = Convert.ToInt32(crewsInformation[crew, 1]) - (rateOfDecreaseHealth + rand.Next(1, 10));
+            decimal crewStamina = Convert.ToInt32(crewsInformation[crew, 2]) - (rateOfDecreaseStamina + rand.Next(1, 10));
+            crewsInformation[crew, 1] = crewHealth <= 0 ? "0" : Convert.ToString(crewHealth);
+            crewsInformation[crew, 2] = crewStamina <= 0 ? "0" : Convert.ToString(crewStamina);
+        }
+    }
 }
