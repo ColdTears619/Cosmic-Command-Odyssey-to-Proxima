@@ -1,6 +1,7 @@
 ﻿//--------------------------------Variables of game--------------------------------
 using System.ComponentModel;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 int chanceOfSuccessScavenge = 50;
 int gameDifficulty = 1;
@@ -8,7 +9,7 @@ int totalTurn = 10;
 int minProbabilityEventToWin = 55;
 int maxHealth = 100, maxStamina = 100, maxSupply = 200, maxMorale = 100;
 int minMoral = 25, turnToLeaveCrew = 3;
-string userChoice;
+string? userChoice;
 
 int rateOfIncreaseCrewHealth = 10;
 int rateOfIncreaseShipHealth = 10;
@@ -61,7 +62,42 @@ string[,] cosmicEvents =
         "Sensors detect an unidentified lifeform aboard the ship — invisible to scanners, but leaving traces of dark matter behind. Will you confront it?",
         "You track the intruder through the shadows, isolate it in a containment field, and restore order to the ship.",
         "The creature vanishes before you can react — systems flicker, and a haunting presence lingers in the corridors."
-    }
+    },
+    {
+        "Sensors detect a dense asteroid field ahead — course correction is critical to avoid collision.",
+        "You skillfully navigate through the asteroid field, keeping the ship and crew safe.",
+        "The ship grazes asteroids — minor hull damage and shaken crew."
+    }, // Best Role: Pilot 🛩️
+
+    {
+        "A mysterious alien artifact drifts near the ship — its properties are unknown. Will you investigate?",
+        "Analysis reveals the artifact’s energy signature — valuable resources extracted safely.",
+        "Artifact destabilizes, causing minor damage and energy surges."
+    }, // Best Role: Scientist 🔬
+
+    {
+        "Crew members report unusual symptoms — a sudden illness spreads through the medbay.",
+        "Medic contains the outbreak, restoring health and stabilizing the crew.",
+        "Illness spreads — crew stamina and health drop, morale shaken."
+    }, // Best Role: Medic 🩺
+
+    {
+        "Power fluctuations detected in the main engines — immediate repairs are needed to maintain speed.",
+        "Engineer restores engine functionality — ship health stabilizes and speed returns to optimal.",
+        "Engine failure causes hull stress — ship integrity reduced, mission delayed."
+    }, // Best Role: Engineer 🛠️
+
+    {
+        "An unauthorized stowaway is discovered aboard — their intentions are unknown.",
+        "Security officer detains the stowaway and restores order, crew morale remains high.",
+        "Stowaway sabotages systems and spreads unrest — morale drops and minor system damage occurs."
+    }, // Best Role: Officer 🛡️
+
+    {
+        "A sudden radiation storm approaches — shields may not hold if not managed correctly.",
+        "Shield systems absorb the radiation safely, crew remains unharmed, and ship systems stable.",
+        "Radiation penetrates shields — crew stamina drops, minor system damage occurs."
+    } // Best Role: Engineer 🛠️ (secondary: Pilot 🛩️)
 };
 
 string[,] shipStatus = { { "Space Ship Health", "100" }, { "Crew Morale", "100" }, { "Supply", "200" } };
@@ -75,6 +111,12 @@ int[,] relatedMatrix =
     {3, 1, 35},
     {4, 3, 35},
     {5, 4, 35},
+    {6, 0, 35},
+    {7, 1, 35},
+    {8, 3, 35},
+    {9, 2, 35},
+    {10, 4, 35},
+    {11, 2, 35},
 };
 string[] chooseRole =
 {
@@ -89,7 +131,8 @@ string[] actionsMenu =
 {
     $"1. Performing emergency repairs (+{rateOfIncreaseShipHealth} ship health, -{rateOfDecreaseSupply + 5} Supply)",
     $"2. Medical Handling & Rest (+{rateOfIncreaseCrewMorale} Morale, +{rateOfIncreaseCrewHealth} Crew Health, +{rateOfIncreaseCrewStamina} Crew Stamina, -{rateOfDecreaseSupply} Supplies)",
-    $"3. Search for resources ({chanceOfSuccessScavenge} chance of success)"
+    $"3. Search for resources ({chanceOfSuccessScavenge}% chance of success)",
+    $"4. Do nothing and keep going"
 };
 
 string[] firstMessages =
@@ -121,6 +164,12 @@ string[] mainMenuOptions = {
 do
 {
     Console.Clear();
+    Console.WriteLine(@"
+    ==============================================
+        COSMIC COMMAND: ODYSSEY TO PROXIMA
+        A Voyage Beyond the Edge of Known Space
+    ==============================================
+    ");
     foreach (string option in mainMenuOptions)
     {
         Console.WriteLine(option);
@@ -147,7 +196,7 @@ do
 void StartGame()
 {
     GameInitialize();
-    // DisplayFirstMessages();
+    DisplayFirstMessages();
 
     for (int turn = 1; turn <= totalTurn; turn++)
     {
@@ -164,20 +213,18 @@ void StartGame()
         int chosenEvent = DisplayAndChooseEvent();
         int chosenCrew = DisplayAndChooseCrewForEvent();
 
-        Console.WriteLine($"chosen event is: {chosenEvent}\nchosen crew is: {chosenCrew}");
         ResultOfDecisionForEvent(chosenEvent, chosenCrew);
 
-        // TODO: Display action menu and choose for action
-        // DisplayActionMenu();
-        // ChooseAction();
-        // DisplayResultOfAction();
+        DisplayActionMenu();
+        int actionID = ChooseAction();
+        DisplayResultOfAction(actionID);
 
         Console.WriteLine("> Press Any Key For Next Turn (Escape Key For Exit)");
         if (Console.ReadKey(true).Key == ConsoleKey.Escape)
         {
             Console.Clear();
             Console.WriteLine("You Loose :(");
-            Console.WriteLine("> Press Any Key To Back To The Main Menu");
+            Console.WriteLine("\n> Press Any Key To Back To The Main Menu");
             Console.ReadLine();
             break;
         }
@@ -224,6 +271,9 @@ void ChooseDifficulty()
 //---------------Initializing Game---------------------
 void GameInitialize()
 {
+    crewsInformation = new string[,] { { "Pilot", "100", "100" }, { "Scientist", "100", "100" }, { "Engineer", "100", "50" }, { "Medic", "100", "100" }, { "Security Officer", "100", "100" } };
+    shipStatus = new string[,] { { "Space Ship Health", "100" }, { "Crew Morale", "100" }, { "Supply", "200" } };
+
     if (gameDifficulty == 2)
     {
         shipStatus[1, 1] = "50";
@@ -231,6 +281,7 @@ void GameInitialize()
     }
     else if (gameDifficulty == 3)
     {
+        totalTurn += 10;
         shipStatus[0, 1] = "50";
         shipStatus[1, 1] = "30";
         shipStatus[2, 1] = "50";
@@ -245,6 +296,7 @@ void GameInitialize()
 //---------------Display First Messages---------------------
 void DisplayFirstMessages()
 {
+    Console.Clear();
     foreach (string message in firstMessages)
     {
         foreach (char ch in message)
@@ -396,6 +448,12 @@ void reward(int actionChoose = 2)
                 Console.WriteLine("\nSupplies Critical: Crew health and stamina cannot recover — provisions exhausted. Scavenge for supplies, Commander.");
                 break;
             }
+
+            if (crewsInformation[3, 1] != "0")
+                Console.WriteLine("Medic Assigned: Crew health and stamina recovery are increased by 50%. Stay steady, Commander.");
+            else
+                Console.WriteLine("No Medic Assigned: Crew health and stamina recovery are slower than normal. Stay vigilant, Commander.");
+
             for (int crew = 0; crew < crewsInformation.GetLength(0); crew++)
             {
                 if (crewsInformation[crew, 1] == "0")
@@ -443,41 +501,28 @@ void IncreaseCrewParams(int crewNumber)
 
 //---------------Increase Crew Params Method--------------------
 //* Effect roles on rate parameters
-//TODO: Remove messages and transfer to new methods which that check health and display messages for recovery
 void ChangeRateParamsByRoles()
 {
     if (crewsInformation[3, 1] != "0")
     {
-        Console.WriteLine("\nMedic Assigned: Crew health and stamina recovery are increased by 50%. Stay steady, Commander.");
         rateOfIncreaseCrewStamina += 5;
         rateOfIncreaseCrewHealth += 5;
     }
     else
     {
-        Console.WriteLine("\nNo Medic Assigned: Crew health and stamina recovery are slower than normal. Stay vigilant, Commander.");
         rateOfIncreaseCrewStamina = 15;
         rateOfIncreaseCrewHealth = 10;
     }
+
     if (crewsInformation[4, 1] != "0")
-    {
-        Console.WriteLine("\nSecurity Officer Assigned: Crew morale increased by 50%. Discipline and focus hold steady, Commander.");
         rateOfIncreaseCrewMorale += 5;
-    }
     else
-    {
-        Console.WriteLine("\nNo Medic Assigned: Crew health and stamina recovery are slower than normal. Stay vigilant, Commander.");
         rateOfIncreaseCrewMorale = 5;
-    }
+
     if (crewsInformation[2, 1] != "0")
-    {
-        Console.WriteLine("\nEngineer Assigned: Ship health recovery and system repairs are increased by 50%. Keep the engines running, Commander.");
         rateOfIncreaseShipHealth += 5;
-    }
     else
-    {
-        Console.WriteLine("\nNo Engineer Assigned: Ship repairs are slower, and system recovery is reduced. Monitor the hull carefully, Commander.");
         rateOfIncreaseShipHealth = 10;
-    }
 }
 //---------------Increase Ship Params Method--------------------
 void IncreaseSupplyShip()
@@ -488,12 +533,20 @@ void IncreaseSupplyShip()
 
 void IncreaseMorale()
 {
+    if (crewsInformation[4, 1] != "0")
+        Console.WriteLine("Security Officer Assigned: Crew morale increased by 50%. Discipline and focus hold steady, Commander.");
+    else
+        Console.WriteLine("No Security Officer Assigned: Crew morale recovers more slowly. Keep your crew focused, Commander.");
     decimal morale = Convert.ToInt32(shipStatus[1, 1]) + rateOfIncreaseCrewMorale;
     shipStatus[1, 1] = morale > maxMorale ? "100" : Convert.ToString(morale);
 }
 
 void IncreaseShipHealth()
 {
+    if (crewsInformation[2, 1] != "0")
+        Console.WriteLine("Engineer Assigned: Ship health recovery and system repairs are increased by 50%. Keep the engines running, Commander.");
+    else
+        Console.WriteLine("No Engineer Assigned: Ship repairs are slower, and system recovery is reduced. Monitor the hull carefully, Commander.");
     decimal shipHealth = Convert.ToInt32(shipStatus[0, 1]) + rateOfIncreaseShipHealth;
     shipStatus[0, 1] = shipHealth > maxHealth ? "100" : Convert.ToString(shipHealth);
 }
@@ -503,7 +556,6 @@ void IncreaseShipHealth()
 //* 2: Reduce Specific crew
 void Penalty(int reduceMode = 1, int crewNumber = -1)
 {
-    //TODO: Add switch case for reduce all parameters
     switch (reduceMode)
     {
         case 1:
@@ -513,7 +565,7 @@ void Penalty(int reduceMode = 1, int crewNumber = -1)
             ReduceCrewParams(crewNumber);
             break;
         case 2:
-            ReduceSupply(crewNumber);
+            ReduceCrewParams(crewNumber);
             break;
         default:
             break;
@@ -561,5 +613,55 @@ void ReduceCrewParams(int crewNumber)
             crewsInformation[crew, 1] = crewHealth <= 0 ? "0" : Convert.ToString(crewHealth);
             crewsInformation[crew, 2] = crewStamina <= 0 ? "0" : Convert.ToString(crewStamina);
         }
+    }
+}
+
+//---------------Display Action Menus Method--------------------
+void DisplayActionMenu()
+{
+    Console.WriteLine("\nWhat should we do commander? ");
+    foreach (var action in actionsMenu)
+    {
+        Console.WriteLine(action);
+    }
+}
+
+//---------------Choose Action Method--------------------
+int ChooseAction()
+{
+    int actionChose;
+    do
+    {
+        Console.Write("Please choose a action(number): ");
+        int.TryParse(Console.ReadLine(), out actionChose);
+    } while ((actionChose - 1) < 0 || (actionChose - 1) > 3);
+
+    return actionChose -= 1;
+}
+
+//---------------Result Of Action Method--------------------
+void DisplayResultOfAction(int actionID)
+{
+    switch (actionID)
+    {
+        case 0:
+            reward(4);
+            break;
+        case 1:
+            reward(1);
+            break;
+        case 2:
+            if (rand.Next(0, 100) >= 50)
+            {
+                Console.WriteLine("\nScavenge Successful: Supplies collected and added to the ship. Keep the crew ready for the next mission, Commander.");
+                reward(3);
+            }
+            else
+                Console.WriteLine("\nScavenge Failed: No supplies were found. Prepare for the next attempt, Commander.");
+            break;
+        case 3:
+            break;
+        default:
+            break;
     }
 }

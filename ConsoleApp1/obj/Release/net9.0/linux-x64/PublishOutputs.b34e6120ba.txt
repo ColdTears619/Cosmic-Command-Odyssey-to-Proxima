@@ -1,0 +1,2 @@
+/home/atlasv/Documents/Side Projects/Cosmic-Command-Odyssey-to-Proxima/ConsoleApp1/publish/linux-x64/ConsoleApp1.pdb
+/home/atlasv/Documents/Side Projects/Cosmic-Command-Odyssey-to-Proxima/ConsoleApp1/publish/linux-x64/ConsoleApp1
